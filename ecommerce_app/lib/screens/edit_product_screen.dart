@@ -20,6 +20,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   final _form = GlobalKey<FormState>();
   var _editedProduct = Product(id: null, title: "", price: 0, description: "", imageUrl: "");
   var _isInit = true;
+  var _isLoading = false;
   var _initValues = {
     'title': '',
     'description': '',
@@ -80,16 +81,51 @@ class _EditProductScreenState extends State<EditProductScreen> {
     }
   }
 
-  void _saveForm(){
+  Future<void> _saveForm() async {
     if (!_form.currentState.validate())
       return;
     _form.currentState.save();
-    if(_editedProduct.id != null)
-      Provider.of<Products>(context, listen: false).updateProduct(_editedProduct.id, _editedProduct);
-    else
-      Provider.of<Products>(context, listen: false).addProduct(_editedProduct);
-
-    Navigator.of(context).pop();
+    setState(() {
+      _isLoading = true;
+    });
+    if(_editedProduct.id != null){
+      try{
+        await Provider.of<Products>(context, listen: false)
+            .updateProduct(_editedProduct.id, _editedProduct);
+      }catch(error){
+        await showDialog(context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text("An error occurred!"),
+              content: Text("Something went wrong!"),
+              actions: [
+                FlatButton(onPressed: () {
+                  Navigator.of(ctx).pop();
+                }, child: Text("Ok"))
+              ],
+            ));
+      }
+    }
+    else{
+      try{
+        await Provider.of<Products>(context, listen: false)
+            .addProduct(_editedProduct);
+      }catch (error){
+        await showDialog(context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text("An error occurred!"),
+              content: Text("Something went wrong!"),
+              actions: [
+                FlatButton(onPressed: () {
+                  Navigator.of(ctx).pop();
+                }, child: Text("Ok"))
+              ],
+            ));
+      }
+    }
+    setState(() {
+      _isLoading = false;
+      Navigator.of(context).pop();
+    });
   }
 
   @override
@@ -104,7 +140,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
           ),
         ],
       ),
-      body: Padding(
+      body: _isLoading
+          ? Center(
+        child: CircularProgressIndicator(),
+      )
+          : Padding(
         padding: EdgeInsets.all(16),
         child: Form(
           key: _form,
@@ -227,10 +267,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
                         validator: (value) {
                           if (value.isEmpty)
                             return "Please enter an image URL.";
-                          if (!value.startsWith("http") && !value.startsWith("https"))
+                          if (!value.startsWith("http") || !value.startsWith("https"))
                             return "Please enter a valid URL.";
-                          if (!value.endsWith(".png") && !value.endsWith(".jpg") && !value.endsWith(".jpeg"))
+                          /*if (!value.endsWith(".png") && !value.endsWith(".jpg") && !value.endsWith(".jpeg"))
                             return "Please enter a valid Image URL.";
+                           */
                           return null;
                         },
                         onSaved: (value) {

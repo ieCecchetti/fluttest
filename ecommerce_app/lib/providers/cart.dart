@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class CartItem{
   final String id;
@@ -21,27 +23,45 @@ class Cart with ChangeNotifier{
     return{..._item};
   }
 
-  void addItem(String productId, double price, String title){
-    if(_item.containsKey(productId)){
-      _item.update(productId,
-              (value) => CartItem(
-                id: value.title,
-                title: value.title,
-                price: value.price,
-                quantity: value.quantity+1,
-              )
-      );
-    }else{
-      _item.putIfAbsent(productId,
-              () => CartItem(
-                id: DateTime.now().toString(),
-                title: title,
-                price: price,
-                quantity: 1,
-              )
-      );
+  Future<void> addItem(String productId, double price, String title) async {
+    final url = 'https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/cart.json';
+    try{
+      if(_item.containsKey(productId)){
+        CartItem inserted = _item.update(productId,
+                (value) => CartItem(
+              id: value.title,
+              title: value.title,
+              price: value.price,
+              quantity: value.quantity+1,
+            )
+        );
+        await http.patch(url, body: json.encode({
+          'id': inserted.id,
+          'title': inserted.title,
+          'price': inserted.price,
+          'quantity': inserted.quantity+1,
+        }));
+      }else{
+        CartItem inserted = _item.putIfAbsent(productId,
+                () => CartItem(
+              id: DateTime.now().toString(),
+              title: title,
+              price: price,
+              quantity: 1,
+            )
+        );
+        await http.post(url, body: json.encode({
+          'id': inserted.id,
+          'title': inserted.title,
+          'price': inserted.price,
+          'quantity': inserted.quantity+1,
+        }));
+      }
+      notifyListeners();
+    }catch(error){
+      throw error;
     }
-    notifyListeners();
+
   }
 
   int get itemCount{

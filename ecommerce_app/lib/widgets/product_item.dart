@@ -39,8 +39,16 @@ class ProductItem extends StatelessWidget {
             leading: Consumer<Product>(
               builder: (context, product, child) => IconButton(
                 icon: Icon(product.isFavourite ? Icons.favorite : Icons.favorite_border),
-                onPressed: () {
-                  product.toggleFavouriteStatus();
+                onPressed: () async {
+                  try{
+                    await product.toggleFavouriteStatus();
+                  }catch(error){
+                    Scaffold.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Some error occurred while updating the preference."),
+                          duration: Duration(seconds: 2),
+                          ),);
+                  }
                 },
                 color: Colors.deepOrange,
               ),
@@ -53,7 +61,15 @@ class ProductItem extends StatelessWidget {
             trailing: IconButton(
               icon: Icon(Icons.shopping_cart),
               onPressed: () {
-                cart.addItem(product.id, product.price, product.title);
+                try{
+                  cart.addItem(product.id, product.price, product.title);
+                }catch(error){
+                  Scaffold.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Some error accured."),
+                        duration: Duration(seconds: 2),
+                      ));
+                }
                 Scaffold.of(context).hideCurrentSnackBar();
                 Scaffold.of(context).showSnackBar(
                     SnackBar(

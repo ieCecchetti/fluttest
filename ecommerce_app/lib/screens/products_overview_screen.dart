@@ -20,6 +20,34 @@ enum FilterOption {
 
   class _ProductsOverviewScreen extends State<ProductsOverviewScreen>{
   var _showFavourite = false;
+  var _isInit = true;
+  var _isLoading = false;
+
+
+  @override
+  void initState() {
+    // Provider.of<Products>(context).fetchAndSetProducts(); // WONT WORK
+    // Future.delayed(Duration.zero).then((_) => {
+    //   Provider.of<Products>(context).fetchAndSetProducts();
+    // }); // THIS TAKES SOME TIME AND IS AN HACK
+    super.initState();
+  }
+
+
+  @override
+  void didChangeDependencies() {
+    if(_isInit){
+      _isLoading = true;
+      Provider.of<Products>(context).fetchAndSetProducts().then((_) {
+        setState(() {
+          _isLoading = false;
+        });
+      });
+      _isInit = false;
+    }
+    super.didChangeDependencies();
+  }
+
   @override
   Widget build(BuildContext context) {
     final productContainer = Provider.of<Products>(context, listen: false);
@@ -60,7 +88,9 @@ enum FilterOption {
         ],
       ),
       drawer: AppDrawer(),
-      body: ProductsGrid(_showFavourite),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(),)
+          : ProductsGrid(_showFavourite),
     );
   }
 
