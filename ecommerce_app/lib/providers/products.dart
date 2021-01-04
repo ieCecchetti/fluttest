@@ -6,9 +6,14 @@ import '../models/http_exception.dart';
 
 class Products with ChangeNotifier {
   List<Product> _items = [];
+  final String authToken;
+  final String userId;
 
-  Future<void> fetchAndSetProducts() async{
-    const url = "https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/products.json";
+  Products(this.authToken, this.userId, this._items);
+
+  Future<void> fetchAndSetProducts([bool filterByUser = false]) async{
+    final filterString = filterByUser ? "&orderBy='creatorId'&equalTo'$userId'" : "";
+    var url = "https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/products.json?auth=$authToken$filterString";
     var response;
     try{
       response = await http.get(url);
@@ -17,6 +22,9 @@ class Products with ChangeNotifier {
     }
     print(json.decode(response.body));
     final extractedData = json.decode(response.body) as Map<String, dynamic>;
+    url = 'https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/userFavourite/$userId.json?auth=$authToken';
+    final favouriteResponse = await http.get(url);
+    final favouriteData = json.decode(favouriteResponse.body);
     final List<Product> loadedProducts = [];
     if(extractedData != null){
       extractedData.forEach((key, value) {
@@ -25,7 +33,8 @@ class Products with ChangeNotifier {
             title: value['title'],
             description: value['description'],
             price: value['price'],
-            isFavourite: value['favourite'],
+            // ?? means if is null the second argoument
+            isFavourite: favouriteData == null ? false : favouriteData[key] ?? false,
             imageUrl: value['image']
         ));
       });
@@ -45,7 +54,7 @@ class Products with ChangeNotifier {
   }
 
   Future<void> addProduct(Product item) async {
-    const url = 'https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/products.json';
+    final url = 'https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/products.json?auth=$authToken';
     var response;
     try{
       response= await http.post(url, body: json.encode({
@@ -53,7 +62,7 @@ class Products with ChangeNotifier {
         'description': item.description,
         'image': item.imageUrl,
         'price': item.price,
-        'favourite': item.isFavourite,
+        'creatorId': userId,
       }));
     }catch(error){
       print(error);
@@ -79,7 +88,7 @@ class Products with ChangeNotifier {
   Future<void> updateProduct(String productId, Product newProduct) async {
     final prodIndex = _items.indexWhere((element) => element.id == productId);
     if(prodIndex >= 0){
-      final url = 'https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/products/$productId.json';
+      final url = 'https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/products/$productId.json?auth=$authToken';
       try{
         await http.patch(url,
             body: json.encode({
@@ -99,7 +108,7 @@ class Products with ChangeNotifier {
   }
 
   Future<void> deleteProduct(String productId) async {
-    final url = 'https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/products/$productId.json';
+    final url = 'https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/products/$productId.json?auth=$authToken';
     final existingProductIndex = _items.indexWhere((element) => element.id == productId);
     var existingProduct = _items[existingProductIndex];
 

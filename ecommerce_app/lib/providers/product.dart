@@ -20,14 +20,14 @@ class Product with ChangeNotifier{
     this.isFavourite = false
   });
 
-  Future<void> toggleFavouriteStatus() async {
-    final url = 'https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/products/$id.json';
+  Future<void> toggleFavouriteStatus(String token, String userId) async {
+    final url = 'https://flutter-update-d391f-default-rtdb.europe-west1.firebasedatabase.app/userFavourite/$userId/$id.json?auth=$token';
     try{
       isFavourite = !isFavourite;
       notifyListeners();
-      var response = await http.patch(url, body: json.encode({
-        'favourite': this.isFavourite
-      }));
+      var response = await http.put(url, body: json.encode(
+        isFavourite
+      ));
       if (response.statusCode >=400)
         throw HttpException("error in update the preference");
     }catch(error){

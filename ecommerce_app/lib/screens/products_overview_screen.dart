@@ -14,6 +14,8 @@ enum FilterOption {
 }
 
   class ProductsOverviewScreen extends StatefulWidget {
+    static const routeName = "/product-overview";
+
     @override
     _ProductsOverviewScreen createState()  => _ProductsOverviewScreen();
   }
